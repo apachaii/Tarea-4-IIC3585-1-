@@ -503,7 +503,7 @@ btnPhoto.on('click', () => {
     console.log('Inicializar camara');
     contenedorCamara.removeClass('oculto');
 
-    camara.encender();
+    camara.turn_on();
 
 });
 
@@ -513,9 +513,9 @@ btnTomarFoto.on('click', () => {
 
     console.log('Botón tomar foto');
 
-    foto = camara.tomarFoto();
+    foto = camara.capture();
 
-    camara.apagar();
+    camara.turn_off();
 
     // console.log(foto);
 

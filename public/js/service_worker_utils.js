@@ -1,28 +1,19 @@
-// Guardar  en el cache dinamico
-function actualizaCacheDinamico(dynamicCache, req, res) {
-
+function updateDynamicCache(dynamicCache, req, res) {
 
     if (res.ok) {
-
         return caches.open(dynamicCache).then(cache => {
-
             cache.put(req, res.clone());
-
             return res.clone();
-
         });
-
-    } else {
-        return res;
     }
 
+    return res;
 }
 
 // Cache with network update
-function actualizaCacheStatico(staticCache, req, APP_SHELL_INMUTABLE) {
+function updateStaticCache(staticCache, req, APP_SHELL_IMMUTABLE) {
 
-
-    if (APP_SHELL_INMUTABLE.includes(req.url)) {
+    if (APP_SHELL_IMMUTABLE.includes(req.url)) {
         // No hace falta actualizar el inmutable
         // console.log('existe en inmutable', req.url );
 
@@ -30,7 +21,7 @@ function actualizaCacheStatico(staticCache, req, APP_SHELL_INMUTABLE) {
         // console.log('actualizando', req.url );
         return fetch(req)
             .then(res => {
-                return actualizaCacheDinamico(staticCache, req, res);
+                return updateDynamicCache(staticCache, req, res);
             });
     }
 
@@ -54,7 +45,7 @@ function manejoApiMensajes(cacheName, req) {
 
                 // console.log(body);
                 const bodyObj = JSON.parse(body);
-                return guardarMensaje(bodyObj);
+                return saveMessage(bodyObj);
 
             });
         } else {
@@ -67,7 +58,7 @@ function manejoApiMensajes(cacheName, req) {
         return fetch(req).then(res => {
 
             if (res.ok) {
-                actualizaCacheDinamico(cacheName, req, res.clone());
+                updateDynamicCache(cacheName, req, res.clone());
                 return res.clone();
             } else {
                 return caches.match(req);

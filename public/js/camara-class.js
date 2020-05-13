@@ -1,45 +1,37 @@
 class Camara {
 
     constructor(videoNode) {
-
         this.videoNode = videoNode;
         console.log('Camara Class init');
     }
 
 
-    encender() {
-
+    turn_on() {
         navigator.mediaDevices.getUserMedia({
             audio: false,
             video: {width: 300, height: 300}
-        }).then(stream => {
+        }).
 
+        then(stream => {
             this.videoNode.srcObject = stream;
             this.stream = stream;
-
         });
-
     }
 
 
-    apagar() {
-
-
+    turn_off() {
         this.videoNode.pause();
 
         if (this.stream) {
             this.stream.getTracks()[0].stop();
         }
-
-
     }
 
 
-    tomarFoto() {
+    capture() {
 
-        // Crear un elemento canvas para renderizr ahí la foto
+        // Crear un elemento canvas para renderizar ahí la foto
         let canvas = document.createElement('canvas');
-
 
         // Colocar las dimensiones igual al elemento del video
         canvas.setAttribute('width', 300);
@@ -51,18 +43,15 @@ class Camara {
         // dibujar, la imagen dentro del canvas
         context.drawImage(this.videoNode, 0, 0, canvas.width, canvas.height);
 
-
-        this.foto = context.canvas.toDataURL();
+        const photo = context.canvas.toDataURL();
 
         // limpieza
         canvas = null;
         context = null;
 
-        return this.foto;
+        return photo;
 
     }
-
-
 }
 
 

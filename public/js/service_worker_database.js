@@ -1,34 +1,26 @@
-// Utilidades para grabar PouchDB
+// to record PouchDB
 const db = new PouchDB('mensajes');
 
+const newPostTag = 'new-post';
 
-function guardarMensaje(mensaje) {
+function saveMessage(message) {
 
-    mensaje._id = new Date().toISOString();
+    message._id = new Date().toISOString();
 
-    return db.put(mensaje).then(() => {
-
-        self.registration.sync.register('nuevo-post');
-
+    return db.put(message).then(() => {
+        self.registration.sync.register(newPostTag);
         const newResp = {ok: true, offline: true};
-
         return new Response(JSON.stringify(newResp));
-
     });
-
 }
 
+function postMessages() {
 
-// Postear mensajes a la API
-function postearMensajes() {
-
-    const posteos = [];
+    const posts = [];
 
     return db.allDocs({include_docs: true}).then(docs => {
 
-
         docs.rows.forEach(row => {
-
             const doc = row.doc;
 
             const fetchPom = fetch('api', {
@@ -37,21 +29,17 @@ function postearMensajes() {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(doc)
-            }).then(res => {
+            }).
 
+            then(_ => {
                 return db.remove(doc);
-
             });
 
-            posteos.push(fetchPom);
-
-
+            posts.push(fetchPom);
         }); // fin del foreach
 
-        return Promise.all(posteos);
+        return Promise.all(posts);
 
     });
-
-
 }
 

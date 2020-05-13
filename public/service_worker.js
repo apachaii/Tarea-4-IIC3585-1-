@@ -7,7 +7,7 @@ importScripts('js/service_worker_utils.js');
 
 const STATIC_CACHE = 'static-v3';
 const DYNAMIC_CACHE = 'dynamic-v1';
-const INMUTABLE_CACHE = 'inmutable-v1';
+const IMMUTABLE_CACHE = 'inmutable-v1';
 
 
 const APP_SHELL = [
@@ -27,7 +27,7 @@ const APP_SHELL = [
     'js/libs/plugins/mdtoast.min.css'
 ];
 
-const APP_SHELL_INMUTABLE = [
+const APP_SHELL_IMMUTABLE = [
     'https://fonts.googleapis.com/css?family=Quicksand:300,400',
     'https://fonts.googleapis.com/css?family=Lato:400,300',
     'https://use.fontawesome.com/releases/v5.3.1/css/all.css',
@@ -37,24 +37,19 @@ const APP_SHELL_INMUTABLE = [
 ];
 
 
-self.addEventListener('install', e => {
-
-
+self.addEventListener('install', install_event => {
     const cacheStatic = caches.open(STATIC_CACHE).then(cache =>
         cache.addAll(APP_SHELL));
+    const cacheImmutable = caches.open(IMMUTABLE_CACHE).then(cache =>
+        cache.addAll(APP_SHELL_IMMUTABLE));
 
-    const cacheInmutable = caches.open(INMUTABLE_CACHE).then(cache =>
-        cache.addAll(APP_SHELL_INMUTABLE));
-
-
-    e.waitUntil(Promise.all([cacheStatic, cacheInmutable]));
-
+    install_event.waitUntil(Promise.all([cacheStatic, cacheImmutable]));
 });
 
 
-self.addEventListener('activate', e => {
+self.addEventListener('activate', activate_event => {
 
-    const respuesta = caches.keys().then(keys => {
+    const answer = caches.keys().then(keys => {
 
         keys.forEach(key => {
 
@@ -70,69 +65,58 @@ self.addEventListener('activate', e => {
 
     });
 
-    e.waitUntil(respuesta);
+    activate_event.waitUntil(answer);
 
 });
 
 
-self.addEventListener('fetch', e => {
+self.addEventListener('fetch', fetch_event => {
 
-    let respuesta;
+    let answer;
 
-    if (e.request.url.includes('/api')) {
+    if (fetch_event.request.url.includes('/api')) {
+        // return answer????
+        answer = manejoApiMensajes(DYNAMIC_CACHE, fetch_event.request);
+    }
 
-        // return respuesta????
-        respuesta = manejoApiMensajes(DYNAMIC_CACHE, e.request);
-
-    } else {
-
-        respuesta = caches.match(e.request).then(res => {
-
+    else {
+        answer = caches.match(fetch_event.request).then(res => {
             if (res) {
-
-                actualizaCacheStatico(STATIC_CACHE, e.request, APP_SHELL_INMUTABLE);
+                updateStaticCache(STATIC_CACHE, fetch_event.request, APP_SHELL_IMMUTABLE);
                 return res;
-
-            } else {
-
-                return fetch(e.request).then(newRes => {
-
-                    return actualizaCacheDinamico(DYNAMIC_CACHE, e.request, newRes);
-
-                });
 
             }
 
+            else {
+                return fetch(fetch_event.request).then(newRes => {
+                    return updateDynamicCache(DYNAMIC_CACHE, fetch_event.request, newRes);
+                });
+            }
         });
-
     }
 
-    e.respondWith(respuesta);
-
+    fetch_event.respondWith(answer);
 });
 
 
-// tareas asíncronas
-self.addEventListener('sync', e => {
+self.addEventListener('sync', async_event => {
 
     console.log('SW: Sync');
 
-    if (e.tag === 'nuevo-post') {
-
-        // postear a BD cuando hay conexión
-        const respuesta = postearMensajes();
-
-        e.waitUntil(respuesta);
+    if (async_event.tag === newPostTag) {
+        // post DB if connected
+        const answer = postMessages();
+        async_event.waitUntil(answer);
     }
 
 });
 
-// Escuchar PUSH
-self.addEventListener('push', e => {
+self.addEventListener('push', push_event => {
 
-    const data = JSON.parse(e.data.text());
+    const data = JSON.parse(push_event.data.text());
 
     const title = data.titulo;
+
     const options = {
         body: data.cuerpo,
         // icon: 'img/icons/icon-72x72.png',
@@ -161,28 +145,21 @@ self.addEventListener('push', e => {
     };
 
 
-    e.waitUntil(self.registration.showNotification(title, options));
-
-
+    push_event.waitUntil(self.registration.showNotification(title, options));
 });
 
 
 // Cierra la notificacion
-self.addEventListener('notificationclose', e => {
-    console.log('Notificación cerrada', e);
+self.addEventListener('notificationclose', close_notification_event => {
+    console.log('Notificación cerrada', close_notification_event);
 });
 
 
-self.addEventListener('notificationclick', e => {
+self.addEventListener('notificationclick', click_event => {
 
+    const notification = click_event.notification;
 
-    const notificacion = e.notification;
-    const accion = e.action;
-
-
-    console.log({notificacion, accion});
-
-    const respuesta = clients.matchAll()
+    const answer = clients.matchAll()
         .then(clientes => {
 
             let cliente = clientes.find(c => {
@@ -190,17 +167,15 @@ self.addEventListener('notificationclick', e => {
             });
 
             if (cliente !== undefined) {
-                cliente.navigate(notificacion.data.url);
+                cliente.navigate(notification.data.url);
                 cliente.focus();
             } else {
-                clients.openWindow(notificacion.data.url);
+                clients.openWindow(notification.data.url);
             }
 
-            return notificacion.close();
+            return notification.close();
 
         });
 
-    e.waitUntil(respuesta);
-
-
+    click_event.waitUntil(answer);
 });
